@@ -42,6 +42,7 @@ Update steps:
 * update theta, try to update value function, and policy network
 
 line search:
+
 ![linesearch](https://github.com/jingw2/policy_gradient/blob/master/linesearch.gif)
 
 where ei is expected improvement 
