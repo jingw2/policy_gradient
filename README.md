@@ -19,3 +19,14 @@ of course, it has some shortcomings:
 
 The objective to optimize the expectation of rewards. By importance sampling, we want to calculate the policy gradient. Normally,
 random policy can be expressed as 
+[!equation](https://latex.codecogs.com/gif.latex?\pi_{\theta}&space;=&space;\mu_{\theta}&space;&plus;&space;\epsilon)
+
+### Trust Region Policy Optimization (TRPO)
+The theory of trpo can be seen in paper. Here, I want to show steps and explain the update method
+
+
+### Reference link:
+* https://github.com/gxnk/reinforcement-learning-code/blob/master/
+* https://github.com/mjacar/pytorch-trpo
+* [Trust Region Policy Optimization](http://proceedings.mlr.press/v37/schulman15.pdf)
+* [Optimizing Expectations: From Deep Reinforcement Learning to Stochastic Computation Graphs](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-217.pdf)
