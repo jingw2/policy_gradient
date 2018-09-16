@@ -24,7 +24,7 @@ random policy can be expressed as
 
 one fixed policy + random part. We can use different functions to approximate the fixed part. Random part can be normal distribution. The loss function is as follows
 
-![equation](http://www.sciweavers.org/tex2img.php?eq=J%28%5Ctheta%29%20%3D%20%5Cmathbb%7BE%7D_%7Bs%20%5Csim%20%5Crho%5E%2A%2C%20a%20%5Csim%20%5Cpi_s%7D%20%5B%5Clog%20%5Cpi_%7B%5Ctheta%7D%20%28a%20%7C%20s%29%20Q%5E%2A%28s%2C%20a%29%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+![equation](https://latex.codecogs.com/gif.latex?J(\theta)&space;=&space;\mathbb{E}_{s&space;\sim&space;\rho*,&space;a&space;\sim&space;\pi_s}&space;[\log&space;\pi_{\theta}(a,&space;s)&space;Q(s,&space;a)])
 
 One training curve is as follows
 
