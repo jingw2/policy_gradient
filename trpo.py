@@ -29,17 +29,17 @@ import model
 
 class TRPO(object):
 
-	def __init__(self, policyNet, valueFunc, env, method = "single_path"):
+	def __init__(self, policy_net, value_net, env, method = "single_path"):
 		self.cg_iter = 10
-		self.pg_model = policyNet
-		self.val_model = valueFunc
+		self.pg_model = policy_net
+		self.val_model = value_net
 		self.max_episode_num = 1
 		self.env = env
-		self.gamma = 0.95
+		self.gamma = 0.99
 		self.damping = 0.001
 		self.delta = 0.01
 		self.advantage = None
-		self.batch_size = 32 # for image training
+		self.batch_size = 128 # for image training
 		self.lamb = 0.0
 
 	##########################################################
@@ -84,12 +84,12 @@ class TRPO(object):
 				action, dist = self.sample_action_from_policy(state)
 
 				# step 
-				newState, reward, done, _ = self.env.step(action.item())
+				next_state, reward, done, _ = self.env.step(action.item())
 
 				# compute entropy 
 				entropy += - (dist * dist.log()).sum()
 
-				state = newState
+				state = next_state
 				actions.append(action)
 				rewards.append(reward)
 
@@ -403,48 +403,54 @@ class TRPO(object):
 
 
 if __name__ == '__main__':
-	env = gym.make("CartPole-v0").unwrapped
-	numActions = env.action_space.n
-	pg = model.PolicyNet(numActions)
-	value = model.ValueFunctionWrapper(model.ValueNet(), lr = 0.01)
-	env = gym.make("CartPole-v0").unwrapped
-	max_iter = 300
+	env = gym.make("CartPole-v0")
+	global state_size, action_size
+	state_size = int(np.product(env.observation_space.shape))
+	action_size = int(env.action_space.n)
+	pg = model.Actor(state_size, action_size)
+	value = model.ValueFunctionWrapper(model.ValueNet(state_size), lr = 1e-3)
+	env = gym.make("CartPole-v0")
+	max_iter = 800
 
 	trpo = TRPO(pg, value, env)
 	rewards = []
-	bestReward = float("-inf")
-	bestModel = None
+	best_reward = float("-inf")
+	best_model = None
 	for it in range(max_iter):
 		
 		reward = trpo.step(verbose = 0)
 		rewards.append(reward)
 
+		average_reward = np.mean(rewards[-100:])
 		if it % 100 == 0:
-			print("Iteration {}...".format(it))
-			print("reward: ", reward)
+			print("Iteration: {}, last 100 average reward: {}, average reward: {}".format(it + 1, \
+				average_reward, np.mean(rewards)))
 
-		if reward > bestReward:
-			bestReward = reward
-			bestModel = deepcopy(trpo.pg_model)
+		if reward > best_reward:
+			best_reward = reward
+			best_model = deepcopy(trpo.pg_model)
 
-	plt.plot(list(range(max_iter)), rewards, "r-")
-	plt.xlabel("episodes")
-	plt.ylabel("reward")
+		if average_reward > env.spec.reward_threshold:
+			print("Solved!")
+			break
+
+	running_rewards = rewards
+	rewards = np.array(running_rewards)
+	rewards_mean = np.mean(rewards)
+	rewards_std = np.std(rewards)
+
+	plt.plot(running_rewards)
+	plt.fill_between(
+	    range(len(rewards)),
+	    rewards-rewards_std, 
+	    rewards+rewards_std, 
+	    color='orange', 
+	    alpha=0.2
+	)
+	plt.title(
+	    'TRPO Rewards Mean: {:.2f}, Standard Deviation: {:.2f}'.format(
+	        np.mean(running_rewards),
+	        np.std(running_rewards)
+	    )
+	)
 	plt.show()
-
-	state = env.reset()
-	done = False
-
-	reward_sum = 0
-	while not done:
-		state = torch.from_numpy(state).float().unsqueeze(0)
-		action_prob = bestModel(state)
-		action = torch.argmax(action_prob).item()
-
-		newState, reward, done, _ = env.step(action)
-		reward_sum += reward
-		env.render()
-
-		state = newState
-	env.close()
-	print("total reward: ", reward_sum)

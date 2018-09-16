@@ -7,6 +7,8 @@ utility function
 
 import numpy as np 
 import scipy.signal as signal
+import random
+from typing import NamedTuple
 
 def explained_variance_1d(ypred, y):
 	"""
@@ -33,10 +35,43 @@ def flatten(l):
 	return result
 
 def get_discount_reward(rewards, gamma):
-	result = []
+	'''
+	Get discount reward
+	Args:
+	rewards (list)
+	gamma (float)
+	'''
+	result = [0] * len(rewards)
 	rew = 0
-	for power, r in enumerate(rewards):
-		rew += r * gamma ** power
-		result.append(rew)
-	result.reverse()
+	for i in reversed(range(len(rewards))):
+		rew = rew * gamma + rewards[i]
+		result[i] = rew
 	return result
+
+# make transition
+class Transition(NamedTuple):
+	state: np.array
+	action: np.array or int
+	next_state: np.array
+	reward: float
+
+# define memory replay
+class ReplayMemory(object):
+
+	def __init__(self, capacity):
+		self.capacity = capacity 
+		self.memory = []
+
+	def push(self, transition):
+		if len(self.memory) == self.capacity:
+			self.memory.pop(0)
+		self.memory.append(transition)
+
+	def sample(self, batch_size):
+		return random.sample(self.memory, batch_size)
+
+	def __len__(self):
+		return len(self.memory)
+
+	def clear(self):
+		self.memory = []

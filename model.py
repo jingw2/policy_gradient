@@ -19,32 +19,50 @@ import numpy as np
 import torch.optim as optim
 from torch.nn.utils.convert_parameters import vector_to_parameters, parameters_to_vector
 
-class PolicyNet(nn.Module):
-	def __init__(self, numActions):
-		super(PolicyNet, self).__init__()
-		self.layer1 = nn.Linear(4, 10)
-		self.layer2 = nn.Linear(10, numActions)
-		self.softmax = nn.Softmax()
+
+class ValueNet(nn.Module):
+
+	def __init__(self, state_size, hidden_size = 64):
+		super(ValueNet, self).__init__()
+		self.layer1 = nn.Linear(state_size, hidden_size)
+		self.layer2 = nn.Linear(hidden_size, hidden_size)
+		self.layer3 = nn.Linear(hidden_size, 1)
+
+
+	def forward(self, x):
+		x = F.relu(self.layer1(x))
+		x = F.relu(self.layer2(x))
+		x = self.layer3(x)
+
+		return x
+
+class Critic(nn.Module):
+	def __init__(self, state_size, action_size, hidden_size = 64):
+		super(Critic, self).__init__()
+		self.layer1 = nn.Linear(state_size, hidden_size)
+		self.layer2 = nn.Linear(hidden_size + action_size, hidden_size)
+		self.layer3 = nn.Linear(hidden_size, 1)
+
+	def forward(self, x):
+		state, action = x
+		out = F.relu(self.layer1(state))
+		out = F.relu(self.layer2(torch.cat([out, action], dim = 1)))
+		out = self.layer3(out)
+		return out
+
+class Actor(nn.Module):
+	def __init__(self, state_size, action_size, hidden_size = 64):
+		super(Actor, self).__init__()
+		self.layer1 = nn.Linear(state_size, hidden_size)
+		self.layer2 = nn.Linear(hidden_size, hidden_size)
+		self.layer3 = nn.Linear(hidden_size, action_size)
 		
 	
 	def forward(self, x):
 		x = F.relu(self.layer1(x))
-		x = self.layer2(x)
+		x = F.relu(self.layer2(x))
+		x = self.layer3(x)
 		x = F.softmax(x, dim = 1)
-		# x = x.view(x.size(1),  -1)
-		return x
-
-class ValueNet(nn.Module):
-
-	def __init__(self):
-		super(ValueNet, self).__init__()
-		self.layer1 = nn.Linear(4, 10)
-		self.layer2 = nn.Linear(10, 1)
-
-	def forward(self, x):
-		x = F.relu(self.layer1(x))
-		x = self.layer2(x)
-
 		return x
 
 class ValueFunctionWrapper(nn.Module):
