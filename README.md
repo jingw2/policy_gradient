@@ -59,21 +59,23 @@ From my experience in TRPO, it is sensitive to the quality of data. And based on
 
 It is simpler and more stable than TRPO. Firstly, define the ratio
 
-![equation](http://www.sciweavers.org/tex2img.php?eq=r_t%28%5Ctheta%29%20%3D%20%5Cfrac%7B%5Cpi_%7B%5Ctheta%7D%28a_t%20%7C%20s_t%29%7D%7B%5Cpi_%7B%5Ctheta_%5Cold%7D%28a_t%20%7C%20s_t%29%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+![equation](https://latex.codecogs.com/gif.latex?r_t(\theta)&space;=&space;\frac{\pi_{\theta}(a_t&space;|&space;s_t)}{\pi_{\theta_{old}(a_t&space;|&space;s_t)}})
 
 In order to modify the objective to penalize changes to the policy that move the ratio away from 1, clipped surrogate objective, fixed KL and adaptive KL penalty coefficient methods have been came up in the paper. 
 
 * Clipped surrogate objective
 
-![equation](http://www.sciweavers.org/tex2img.php?eq=J%28%5Ctheta%29%20%3D%20%5Cmathbb%7BE%7D_t%20%5Cleft%5B%5Cmin%28r_t%28%5Ctheta%29A_t%2C%20clip%28r_t%28%5Ctheta%29%2C%201%20-%20%5Cepsilon%2C%201%20%2B%20%5Cepsilon%29A_t%20%5Cright%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+![equation](https://latex.codecogs.com/gif.latex?J(\theta)&space;=&space;\mathbb{E}_t&space;\left[&space;\min&space;(r_t(\theta))A_t,&space;clip(r_t(\theta),&space;1&space;-&space;\epsilon,&space;1&space;&plus;&space;\epsilon)A_t&space;\right&space;])
 
-where ![equation](http://www.sciweavers.org/tex2img.php?eq=A_t%20%3D%20r_t%20%2B%20%5Cgamma%20r_%7Bt%2B1%7D%20%2B%20%5Ccdots%20%2B%20%5Cgamma%5E%7BT-t%2B1%7D%20r_%7BT-1%7D%20%2B%20%5Cgamma%5E%7BT-t%7D%20V%28s_%7BT%7D%29%20-%20V%28s_t%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+where ![equation](https://latex.codecogs.com/gif.latex?A_t&space;=&space;r_t&space;&plus;&space;\gamma&space;r_{t&plus;1}&space;&plus;&space;\cdots&space;&plus;&space;\gamma^{T-t&plus;1}&space;r_{T-1}&space;&plus;&space;\gamma^{T-t}V(s_T)&space;-&space;V(s_t))
 
-* Fixed kl and adaptive kl penalty coefficient
+* Fixed KL and adaptive KL penalty coefficient
 
-![equation](http://www.sciweavers.org/tex2img.php?eq=J%28%5Ctheta%29%20%3D%20%5Cmathbb%7BE%7D_t%20%5Cleft%5B%20r_t%28%5Ctheta%29%20A_t%20-%20%5Cbeta%20KL%5B%5Cpi_%7B%5Ctheta_%7Bold%7D%7D%28%5Ccdot%20%7C%20s_t%29%2C%20%5Cpi_%7B%5Ctheta%7D%28%5Ccdot%20%7C%20s_t%29%20%5Cright%5D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+![equation](https://latex.codecogs.com/gif.latex?\begin{align*}&space;J(\theta)&space;&=&space;\mathbb{E}_t&space;\left[r_t(\theta)&space;A_t&space;-&space;\beta&space;KL[\pi_{\theta_{old}}(\cdot&space;|s_t),&space;\pi_{\theta}(\cdot&space;|s_t)]&space;\right&space;]&space;\\&space;KL[\pi_{\theta_{old}}(\cdot&space;|s_t),&space;\pi_{\theta}(\cdot&space;|s_t)]&space;&=&space;P(\theta_{old})&space;\log&space;\frac{P(\theta)}{P(\theta_{old})}&space;\\&space;d&space;&=\mathbb{E}_t&space;[KL[\pi_{\theta_{old}}(\cdot&space;|s_t),&space;\pi_{\theta}(\cdot&space;|s_t)]]&space;\\&space;\end{align*})
 
-where ![equation](http://www.sciweavers.org/tex2img.php?eq=KL%5B%5Cpi_%7B%5Ctheta_%7Bold%7D%7D%28%5Ccdot%20%7C%20s_t%29%2C%20%5Cpi_%7B%5Ctheta%7D%28%5Ccdot%20%7C%20s_t%29%5D%20%3D%20P%28%5Ctheta_%7Bold%7D%29%20%5Clog%20%5Cfrac%7BP%28%5Ctheta%29%7D%7BP%28%5Ctheta_%7Bold%7D%29%7D&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+With respect to adaptive KL, we have $d$, shown above, 
+
+![equation](https://latex.codecogs.com/gif.latex?\beta&space;=&space;\begin{cases}&space;\beta&space;/&space;2&space;\hspace{0.5cm}&space;\text{if}&space;\hspace{0.5cm}&space;d&space;<&space;d_{target}&space;/&space;1.5&space;\\&space;2\beta&space;\hspace{0.5cm}&space;\text{if}&space;\hspace{0.5cm}&space;d&space;>&space;d_{target}&space;\times&space;1.5&space;\end{cases})
 
 
 ### Reference link:
