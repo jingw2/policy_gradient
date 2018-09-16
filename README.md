@@ -73,10 +73,28 @@ where ![equation](https://latex.codecogs.com/gif.latex?A_t&space;=&space;r_t&spa
 
 ![equation](https://latex.codecogs.com/gif.latex?\begin{align*}&space;J(\theta)&space;&=&space;\mathbb{E}_t&space;\left[r_t(\theta)&space;A_t&space;-&space;\beta&space;KL[\pi_{\theta_{old}}(\cdot&space;|s_t),&space;\pi_{\theta}(\cdot&space;|s_t)]&space;\right&space;]&space;\\&space;KL[\pi_{\theta_{old}}(\cdot&space;|s_t),&space;\pi_{\theta}(\cdot&space;|s_t)]&space;&=&space;P(\theta_{old})&space;\log&space;\frac{P(\theta)}{P(\theta_{old})}&space;\\&space;d&space;&=\mathbb{E}_t&space;[KL[\pi_{\theta_{old}}(\cdot&space;|s_t),&space;\pi_{\theta}(\cdot&space;|s_t)]]&space;\\&space;\end{align*})
 
-With respect to adaptive KL, we have $d$, shown above, 
+With respect to adaptive KL, we have d shown above, and then
 
 ![equation](https://latex.codecogs.com/gif.latex?\beta&space;=&space;\begin{cases}&space;\beta&space;/&space;2&space;\hspace{0.5cm}&space;\text{if}&space;\hspace{0.5cm}&space;d&space;<&space;d_{target}&space;/&space;1.5&space;\\&space;2\beta&space;\hspace{0.5cm}&space;\text{if}&space;\hspace{0.5cm}&space;d&space;>&space;d_{target}&space;\times&space;1.5&space;\end{cases})
 
+The following graphs show the learning rewards, 
+
+<p align = "center">
+<img src="https://github.com/jingw2/policy_gradient/blob/master/pictures/ppo_clipped_surrogate.png" width="300">
+<img src="https://github.com/jingw2/policy_gradient/blob/master/pictures/ppo_fixed_kl.png" width="300">
+<img src="https://github.com/jingw2/policy_gradient/blob/master/pictures/ppo_adaptive_kl.png" width="300">
+  </p>
+  
+ ### Actor-Critic and Deep Deterministic Policy Gradient 
+ 
+ This is especially for continuous controls using deep reinforcement learning. The main goal is to find the deterministic policy from exploratory behavior policy. From my experience, it does not converge faster than PPO, and sometimes it is sensitive to the quality of data. 
+
+Learning curve:
+<p align = "center">
+<img src="https://github.com/jingw2/policy_gradient/blob/master/pictures/ddpg.png" width="300">
+  </p>
+  
+In order to better train the model, someone came up with the data filter to filter dirty data and get better model. 
 
 ### Reference link:
 * https://github.com/gxnk/reinforcement-learning-code/blob/master/
@@ -84,3 +102,5 @@ With respect to adaptive KL, we have $d$, shown above,
 * [Trust Region Policy Optimization](http://proceedings.mlr.press/v37/schulman15.pdf)
 * [Optimizing Expectations: From Deep Reinforcement Learning to Stochastic Computation Graphs](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-217.pdf)
 * [PPO](https://arxiv.org/abs/1707.06347)
+* [Deterministic Policy Gradient Algorithm](http://proceedings.mlr.press/v32/silver14.pdf)
+* [DDPG](https://arxiv.org/abs/1509.02971)
