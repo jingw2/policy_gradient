@@ -1,7 +1,7 @@
 # Policy Gradient Algorithm
 
 This section is about policy gradient method, including simple policy gradient method and trust region policy optimization.
-Based on cart-v0 environment from openAI gym module, two methods are implemented using pytorch. 
+Based on cart-v0 environment from openAI gym module, different methods are implemented using pytorch. The correspondent hyperparameters are from the correspondent algorithm paper. 
 
 
 ### Vanilla Policy gradient theory
