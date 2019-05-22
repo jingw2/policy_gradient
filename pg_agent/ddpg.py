@@ -38,7 +38,22 @@ from torch.nn.utils.convert_parameters import vector_to_parameters, parameters_t
 
 from netsapi.challenge import *
 
-class DDPGAgent(agent.Agent):
+class DDPG(agent.Agent):
+
+    def __init__(self, net_args, trajectory_args, reward_args, ddpg_args):
+        '''
+        Args:
+        the first tree arguments see agent.Agent
+
+        ddpg_args:
+            - tau (float): soft update coefficient
+            - ounoise (bool): use ounoise to explore action (recommended)
+            - decay (bool): use decay to sample actions (recommended)
+        '''
+        super(DDPG, self).__init__(net_args, trajectory_args, reward_args)
+        self.tau = ddpg_args["tau"]
+        self.ounoise = ddpg_args["ounoise"]
+        self.decay = ddpg_args["decay"]
 
     def build_net(self):
         '''build actor, critic, target_actor, target_critic network'''
@@ -60,15 +75,19 @@ class DDPGAgent(agent.Agent):
         self.transition = collections.namedtuple("transition", ["state", 
                 "action", "next_state", "reward"])
         
-        self.tau = 0.001
-        self.noise = OUNoise(mu=np.zeros(self.action_size), sigma=0.1)
+        if self.ounoise:
+            self.noise = OUNoise(mu=np.zeros(self.action_size), sigma=0.1)
         self.epsilon = 1.
     
-    def sample_actions(self, states_input, decay=True, ounoise=True):
-        if decay:
+    def sample_actions(self, states_input):
+        '''
+        mean is generated from actor network
+        action = mean + noise
+        '''
+        if self.decay:
             self.epsilon -= 1 / 50000
         action = self.actor(states_input)
-        if ounoise:
+        if self.ounoise:
             with torch.no_grad():
                 noise = self.epsilon * Variable(torch.FloatTensor(self.noise()))
         else:
@@ -81,7 +100,15 @@ class DDPGAgent(agent.Agent):
         return sampled_actions
 
     def train_op(self):
-
+        '''
+        Steps:
+            - a_{t+1} is sampled from target actor based on s_{t+1}
+            - Q_prime (s_{t+1}, a_{t+1}) is from target critic
+            - Qtrue (s_t, a_t) = r(s_t, a_t) + gamma * Q_prime (s_{t+1}, a_{t+1})
+            - Qpred (s_t, a_t) is sampled from critic based on s_t, a_t
+            - Critic loss: MSELoss (Qtrue, Qpred)
+            - Actor loss: - Mean [Q(s_t, a'_t)], a'_t is sampled from current actor
+        '''
         if len(self.replay_memory) < self.min_timesteps_per_batch:
             return 
         
@@ -130,6 +157,7 @@ class DDPGAgent(agent.Agent):
         self.target_actor = self.update_target(self.actor, self.target_actor)
 
     def update_target(self, source, target):
+        '''soft update target'''
         new_target_param = parameters_to_vector(source.parameters()) * self.tau + \
                 (1 - self.tau) * parameters_to_vector(target.parameters())
         vector_to_parameters(new_target_param, target.parameters())
