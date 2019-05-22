@@ -2,11 +2,11 @@
 
 This folder is to create policy gradient agents combined with different policy gradient algorithms, 
 including:
-* vanilla policy gradient
-* TRPO (TO DO)
-* PPO (TO DO)
-* DDPG
-* SAC
+* vanilla policy gradient (VPG)
+* Trust Region Policy Optimization (TRPO, TO DO)
+* Proximal Policy Optimization (PPO, TO DO)
+* Deep Deterministic Policy Gradient (DDPG)
+* Soft Actor-Critic (SAC)
 * TD3 (TO DO)
 
 to support different methods running in Gym environments or others. 
@@ -45,6 +45,9 @@ and method arguments.
 | ------------- |:-------------:| -----:|
 | --dont_normalize_advantages (-dna) | as shows      | apply -dna to use|
 | --nn_baseline (-bl) | use baseline to <br> loss function | apply -bl to use|
+
+PG Agents support the asychronous actor critic algorithm because multiprocessing there. To use, just apply -bl. 
+
 
 #### DDPG Arguments
 | name          | explanation   | default  |
