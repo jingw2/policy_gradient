@@ -113,7 +113,7 @@ def train_PG(
     if method == "sac":
         agent = sac.SAC(net_args, trajectory_args, reward_args, method_args)
     elif method == "ddpg":
-        agent = ddpg.DDPGAgent(net_args, trajectory_args, reward_args)
+        agent = ddpg.DDPG(net_args, trajectory_args, reward_args, method_args)
     elif method == "vanilla":
         agent = Agent(net_args, trajectory_args, reward_args)
 
@@ -191,12 +191,17 @@ def main():
     parser.add_argument('--hidden_size', '-hs', type=int, default=64)
     parser.add_argument('--pg_step', '-ps', type=int, default=0)
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--method', '-m', type=str, default="vanilla")
+    parser.add_argument('--method', '-m', type=str, default="vpg")
     # sac argument
     parser.add_argument('--tau', type=float, default=0.005)
-    parser.add_argument('--duel_q_net', '-dq', type=int, default=1)
+    parser.add_argument('--duel_q_net', '-dq', action='store_true')
     parser.add_argument('--policy_type', '-pt', type=str, default="gaussian")
     parser.add_argument('--action_bound_fn', '-abf', type=str, default="tanh")
+
+    # ddpg argument
+    parser.add_argument('--ounoise', action='store_true')
+    parser.add_argument('--decay', action='store_true')
+
     args = parser.parse_args()
 
     # check gpu
@@ -219,6 +224,12 @@ def main():
             "duel_q_net": args.duel_q_net,
             "policy_type": args.policy_type,
             "action_bound_fn": args.action_bound_fn
+        }
+    elif args.method == "ddpg":
+        method_args = {
+            "tau": args.tau,
+            "ounoise": args.ounoise,
+            "decay": args.decay
         }
 
     for e in range(args.n_experiments):
