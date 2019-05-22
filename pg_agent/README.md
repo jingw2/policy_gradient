@@ -2,7 +2,7 @@
 
 This folder is to create policy gradient agents combined with different policy gradient algorithms, 
 including:
-* vanilla policy gradient (VPG)
+* Vanilla Policy Gradient (VPG)
 * Trust Region Policy Optimization (TRPO, TO DO)
 * Proximal Policy Optimization (PPO, TO DO)
 * Deep Deterministic Policy Gradient (DDPG)
