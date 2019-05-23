@@ -65,6 +65,9 @@ PG Agents support the asychronous actor critic algorithm because multiprocessing
 | --action_bound_fn (-abf)    | enforce action bound   | tanh  |
 
 ### TO DO: 
+* [ ] Add tensorboard
+* [ ] Add model save and load, args
+* [ ] Add requirements.txt
 * [ ] Show some results
 * [ ] Add PPO
 * [ ] Add TRPO
