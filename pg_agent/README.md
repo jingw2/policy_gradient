@@ -40,7 +40,7 @@ and method arguments.
 | --gpu | control gpu use | 1 |
 | --method (-m) | method to run | vpg |
 
-#### Vanilla Policy Gradient Arguments
+#### VPG Arguments
 | name          | explanation   | default  |
 | ------------- |:-------------:| -----:|
 | --dont_normalize_advantages (-dna) | as shows      | apply -dna to use|
