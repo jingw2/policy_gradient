@@ -253,12 +253,12 @@ class SAC(agent.Agent):
             next_qvalue = self.gamma * (target_qvalue - torch.exp(self.log_alpha) \
                 * next_logprob) + reward_batch
 
-        q1_pred = self.q1_net(state_batch, action_batch).view(-1)
-        q2_pred = self.q2_net(state_batch, action_batch).view(-1)
         sample_action, logprob, z, mean, logstd = self.get_log_prob(state_batch)
 
         # here for value net, actions are sampled from current policy, not replay buffer
         if self.duel_q_net:
+            q1_pred = self.q1_net(state_batch, action_batch).view(-1)
+            q2_pred = self.q2_net(state_batch, action_batch).view(-1)
             new_q1_pred = self.q1_net(state_batch, sample_action)
             new_q2_pred = self.q2_net(state_batch, sample_action)
             new_q_pred = torch.min(new_q1_pred, new_q2_pred)
