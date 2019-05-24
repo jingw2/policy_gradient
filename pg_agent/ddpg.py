@@ -54,6 +54,7 @@ class DDPG(agent.Agent):
         self.tau = ddpg_args["tau"]
         self.ounoise = ddpg_args["ounoise"]
         self.decay = ddpg_args["decay"]
+        self.param_noise = ddpg_args["parameter_noise"]
 
     def build_net(self):
         '''build actor, critic, target_actor, target_critic network'''
@@ -156,6 +157,9 @@ class DDPG(agent.Agent):
         self.target_critic = self.update_target(self.critic, self.target_critic)
         self.target_actor = self.update_target(self.actor, self.target_actor)
 
+        if self.param_noise:
+            self.set_params_noise()
+
     def update_target(self, source, target):
         '''soft update target'''
         new_target_param = parameters_to_vector(source.parameters()) * self.tau + \
@@ -207,6 +211,23 @@ class DDPG(agent.Agent):
                 }
         return path
     
-    def set_params_noise(self):
+    def save_model(self, ddpg_model_path):
+        torch.save(self.actor, os.path.join(ddpg_model_path, "actor.pt"))
+        torch.save(self.target_actor, os.path.join(ddpg_model_path, "target_actor.pt"))
+        torch.save(self.critic, os.path.join(ddpg_model_path, "critic.pt"))
+        torch.save(self.target_critic, os.path.join(ddpg_model_path, "target_critic.pt"))
+    
+    def load_model(self, ddpg_model_path):
+        self.actor = torch.load(os.path.join(ddpg_model_path, "actor.pt"))
+        self.target_actor = torch.load(os.path.join(ddpg_model_path, "target_actor.pt"))
+        self.critic = torch.load(os.path.join(ddpg_model_path, "critic.pt"))
+        self.target_critic = torch.load(os.path.join(ddpg_model_path, "target_critic.pt"))
+    
+    def set_params_noise(self, mean=0., std=0.2):
         '''set parameter noise'''
-        raise NotImplementedError
+        for param in self.actor.parameters():
+            dist = torch.distributions.Normal(mean, std)
+            z = dist.sample()
+            param.data.copy_(param + z)
+
+
