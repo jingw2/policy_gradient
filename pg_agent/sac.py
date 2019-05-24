@@ -135,7 +135,7 @@ class SAC(agent.Agent):
         self.noise = OUNoise(mu=np.zeros(self.action_size), sigma=0.1)
         self.epsilon = 1.
     
-    def sample_actions(self, states_input, ounoise=True, decay=True):
+    def sample_actions(self, states_input):
         '''
         Sample actions based on states input
 
@@ -182,9 +182,9 @@ class SAC(agent.Agent):
         elif self.action_bound_fn == "sigmoid":
         # enforcing action bounds (0, 1)
             action = torch.sigmoid(z)
-            da_du = - action + action.pow(2)
+            da_du = abs(- action + action.pow(2))
         logprob = dist.log_prob(z) - torch.log(da_du + 1e-8)
-        logprob = logprob.sum(1, keepdim=True)
+        logprob = logprob.sum(dim=1).view(-1)
         return action, logprob, z, mean, logstd
     
     def train_op(self):
@@ -248,8 +248,10 @@ class SAC(agent.Agent):
             next_qvalue = reward_batch + self.gamma * target_value
         elif self.policy_type == "gaussian":
             target_qvalue = torch.zeros(self.min_timesteps_per_batch).float()
-            sample_next_action, next_logprob, _, _, _ = self.get_log_prob(next_state_batch)
-            target_qvalue[not_end_index] = self.target_q_net(next_state_batch, sample_next_action)
+            next_logprob = torch.zeros(self.min_timesteps_per_batch).float()
+            sample_next_action, next_logprob_not_end, _, _, _ = self.get_log_prob(next_state_batch)
+            target_qvalue[not_end_index] = self.target_q_net(next_state_batch, sample_next_action).view(-1)
+            next_logprob[not_end_index] = next_logprob_not_end
             next_qvalue = self.gamma * (target_qvalue - torch.exp(self.log_alpha) \
                 * next_logprob) + reward_batch
 
@@ -257,23 +259,21 @@ class SAC(agent.Agent):
 
         # here for value net, actions are sampled from current policy, not replay buffer
         if self.duel_q_net:
-            q1_pred = self.q1_net(state_batch, action_batch).view(-1)
-            q2_pred = self.q2_net(state_batch, action_batch).view(-1)
-            new_q1_pred = self.q1_net(state_batch, sample_action)
-            new_q2_pred = self.q2_net(state_batch, sample_action)
+            new_q1_pred = self.q1_net(state_batch, sample_action).view(-1)
+            new_q2_pred = self.q2_net(state_batch, sample_action).view(-1)
             new_q_pred = torch.min(new_q1_pred, new_q2_pred)
         else:
-            new_pred = self.q_net(state_batch, sample_action)
+            new_q_pred = self.q_net(state_batch, sample_action)
 
         # loss 
         if self.policy_type == "gaussian":
-            actor_loss = (self.alpha * logprob - new_q_pred).mean()
+            actor_loss = (torch.exp(self.log_alpha) * logprob - new_q_pred).mean()
         elif self.policy_type == "deterministic":
             actor_loss = (logprob - new_q_pred).mean()
             actor_loss = actor_loss.mean()
             # value network
             next_value = new_q_pred - logprob
-            value_pred = self.value_net(state_batch)
+            value_pred = self.value_net(state_batch).view(-1)
             value_loss = self.value_loss_fn(value_pred, next_value.detach()).mean()
             self.value_optimizer.zero_grad()
             value_loss.backward()
@@ -285,6 +285,8 @@ class SAC(agent.Agent):
         self.actor_optimizer.step()
       
         if self.duel_q_net:
+            q1_pred = self.q1_net(state_batch, action_batch).view(-1)
+            q2_pred = self.q2_net(state_batch, action_batch).view(-1)
             q1_loss = self.q1_loss_fn(q1_pred, next_qvalue.detach()).mean()
             q2_loss = self.q2_loss_fn(q2_pred, next_qvalue.detach()).mean()
             self.q1_optimizer.zero_grad()
@@ -308,8 +310,8 @@ class SAC(agent.Agent):
                 target_param.data.copy_(target_param * (1 - self.tau) + param * self.tau)
         elif self.policy_type == "gaussian":
             if self.duel_q_net:
-                for target_param, param1, param2 in zip(self.target_value_net.parameters(), self.q1_net.parameters(), 
-                        self.q2_net.parameters):
+                for target_param, param1, param2 in zip(self.target_q_net.parameters(), self.q1_net.parameters(), 
+                        self.q2_net.parameters()):
                     param = random.choice([param1, param2])
                     target_param.data.copy_(target_param * (1 - self.tau) + param * self.tau)
             else:
@@ -324,26 +326,26 @@ class SAC(agent.Agent):
             self.alpha_optimizer.step()
     
     def sample_trajectory(self, env):
-        state = env.reset()
+        # state = env.reset()
         #TODO:
-        # env.reset()
-        # state = env.state
+        env.reset()
+        state = env.state
         states, actions, rewards = [], [], []
         steps = 0
         while True:
             #TODO:
-            # if np.isnan(state):
-            #     env.reset()
-            #     state = env.state
-            #     continue
-            # state = np.array([state])
+            if np.isnan(state):
+                env.reset()
+                state = env.state
+                continue
+            state = np.array([state])
             states.append(state)
             state = torch.Tensor(state.reshape(1, -1)).float()
             action = self.sample_actions(state)
             
             #TODO:
-            action = np.clip(action, env.action_space.low, env.action_space.high).tolist()
-            # action = np.clip(action, 1e-7, 1).tolist()
+            # action = np.clip(action, env.action_space.low, env.action_space.high).tolist()
+            action = np.clip(action, 1e-7, 1).tolist()
             if np.isnan(action[0]):
                 env.reset()
                 state = env.state
@@ -351,8 +353,8 @@ class SAC(agent.Agent):
             actions.append(action)
 
             #TODO:
-            next_state, reward, done, _ = env.step(action)
-            # next_state, reward, done, _ = env.evaluateAction(action)
+            # next_state, reward, done, _ = env.step(action)
+            next_state, reward, done, _ = env.evaluateAction(action)
             if done:
                 next_state = None
                 self.replay_memory.push(self.transition(state, action, 
@@ -374,7 +376,44 @@ class SAC(agent.Agent):
                 "action": np.array(actions, dtype=np.float32)
                 }
         return path
+    
+    def save_model(self, sac_model_path):
+        '''
+        Save trained model based on path input
 
-    def set_params_noise(self):
+        sac_model_path (str): envname_sac_dq_pt format
+        '''
+        torch.save(self.actor, os.path.join(sac_model_path, "actor.pt"))
+        if self.policy_type == "gaussian":
+            torch.save(self.target_q_net, os.path.join(sac_model_path, "target_q_net.pt"))
+            torch.save(self.log_alpha, os.path.join(sac_model_path, "log_alpha.pt"))
+        elif self.policy_type == "deterministic":
+            torch.save(self.value_net, os.path.join(sac_model_path, "value_net.pt"))
+            torch.save(self.target_value_net, os.path.join(sac_model_path, "target_value_net.pt"))
+        if self.duel_q_net:
+            torch.save(self.q1_net, os.path.join(sac_model_path, "q1_net.pt"))
+            torch.save(self.q2_net, os.path.join(sac_model_path, "q2_net.pt"))
+        else:
+            torch.save(self.q_net, os.path.join(sac_model_path, "q_net.pt"))
+    
+    def load_model(self, sac_model_path):
+        self.actor = torch.load(os.path.join(sac_model_path, "actor.pt"))
+        if self.policy_type == "gaussian":
+            self.target_q_net = torch.load(os.path.join(sac_model_path, "target_q_net.pt"))
+            self.log_alpha = torch.load(os.path.join(sac_model_path, "log_alpha.pt"))
+        elif self.policy_type == "deterministic":
+            self.value_net = torch.load(os.path.join(sac_model_path, "value_net.pt"))
+            self.target_value_net = torch.load(os.path.join(sac_model_path, "target_value_net.pt"))
+        if self.duel_q_net:
+            self.q1_net = torch.load(os.path.join(sac_model_path, "q1_net.pt"))
+            self.q2_net = torch.load(os.path.join(sac_model_path, "q2_net.pt"))
+        else:
+            self.q_net = torch.load(os.path.join(sac_model_path, "q_net.pt"))
+
+    def set_params_noise(self, mean=0., std=0.2):
         '''set parameter noise'''
-        raise NotImplementedError
+        for param in self.actor.parameters():
+            dist = torch.distributions.Normal(mean, std)
+            z = dist.sample()
+            param.data.copy_(param + z)
+        
