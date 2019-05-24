@@ -66,13 +66,13 @@ PG Agents support the asychronous actor critic algorithm because multiprocessing
 
 ### TO DO: 
 * [ ] Add tensorboard
-* [ ] Add model save and load, args
+* [X] Add model save and load, args
 * [ ] Add requirements.txt
 * [ ] Show some results
 * [ ] Add PPO
 * [ ] Add TRPO
 * [ ] Add TD3
-* [ ] Add parameter noise
+* [X] Add parameter noise
 
 ### Reference
 * [cs294-112](http://rail.eecs.berkeley.edu/deeprlcourse/)
