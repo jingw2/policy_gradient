@@ -19,6 +19,7 @@ from agent import Agent
 # torch
 import torch
 import torch.nn as nn
+from tensorboardX import SummaryWriter
 
 from netsapi.challenge import *
 
@@ -57,12 +58,12 @@ def train_PG(
     start = time.time()
 
     # env
-    env = gym.make(env_name)
+    # env = gym.make(env_name)
     #TODO:
-    # env = ChallengeSeqDecEnvironment(experimentCount=3005, userID="jingw2", \
-    #     timeout=5, realworkercount=4)
-    # env.state_size = 1
-    # env.action_size = 2
+    env = ChallengeSeqDecEnvironment(experimentCount=3005, userID="jingw2", \
+        timeout=5, realworkercount=4)
+    env.state_size = 1
+    env.action_size = 2
 
     # set up logger
     setup_logger(logdir, locals())
@@ -114,7 +115,7 @@ def train_PG(
         agent = sac.SAC(net_args, trajectory_args, reward_args, method_args)
     elif method == "ddpg":
         agent = ddpg.DDPG(net_args, trajectory_args, reward_args, method_args)
-    elif method == "vanilla":
+    elif method == "vpg":
         agent = Agent(net_args, trajectory_args, reward_args)
 
     # create networks 
@@ -125,8 +126,8 @@ def train_PG(
         print("=============Iteration {}==============".format(it))
         paths, timesteps_this_batch = agent.sample_trajectories(it, env)
         #TODO:
-        # env = ChallengeSeqDecEnvironment(experimentCount=3005, userID="jingw2", \
-        #     timeout=5, realworkercount=4)
+        env = ChallengeSeqDecEnvironment(experimentCount=3005, userID="jingw2", \
+            timeout=5, realworkercount=4)
         total_timesteps += timesteps_this_batch
 
         states = np.concatenate([path["state"] for path in paths])
@@ -136,7 +137,7 @@ def train_PG(
 
         states_input = torch.Tensor(states).float()
         actions_input = torch.Tensor(actions).float()
-        if method == "vanilla":
+        if method == "vpg":
             q_n, adv = agent.estimate_return(states_input, rewards)
             agent.train_op(states_input, actions_input, q_n, adv)
         else:
@@ -150,11 +151,11 @@ def train_PG(
         best_policy = {}
         for i in range(5):
             best_policy[str(i+1)] = best_path["action"][i].tolist()
-        data = {"best_policy": [best_policy], "best_reward": returns[best_idx]}
+        data = {"method": method, "best_policy": [best_policy], "best_reward": returns[best_idx]}
         data = pd.DataFrame(data)
         if os.path.exists("best_policy_pg.csv"):
             policy_df = pd.read_csv("best_policy_pg.csv")
-            policy_df.loc[len(policy_df)] = [best_policy, returns[best_idx]]
+            policy_df.loc[len(policy_df)] = [method, best_policy, returns[best_idx]]
         else:
             policy_df = data
         policy_df.to_csv("best_policy_pg.csv", index=False)
@@ -183,8 +184,6 @@ def main():
     parser.add_argument('--batch_size', '-b', type=int, default=1000)
     parser.add_argument('--ep_len', '-ep', type=float, default=-1.)
     parser.add_argument('--learning_rate', '-lr', type=float, default=5e-3)
-    parser.add_argument('--dont_normalize_advantages', '-dna', action='store_true')
-    parser.add_argument('--nn_baseline', '-bl', action='store_true')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--n_experiments', '-e', type=int, default=1)
     parser.add_argument('--n_layers', '-l', type=int, default=2)
@@ -192,6 +191,14 @@ def main():
     parser.add_argument('--pg_step', '-ps', type=int, default=0)
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--method', '-m', type=str, default="vpg")
+    parser.add_argument("--save_model", "-sm", action='store_true')
+    parser.add_argument("--load_model", "-lm", action='store_true')
+    parser.add_argument("--parameter_noise", "-pn", action='store_true')
+
+    # vpg arguments
+    parser.add_argument('--dont_normalize_advantages', '-dna', action='store_true')
+    parser.add_argument('--nn_baseline', '-bl', action='store_true')
+
     # sac argument
     parser.add_argument('--tau', type=float, default=0.005)
     parser.add_argument('--duel_q_net', '-dq', action='store_true')
@@ -218,18 +225,21 @@ def main():
     if not(os.path.exists(logdir)):
         os.makedirs(logdir)
 
+    method_args = {}
     if args.method == "sac":
         method_args = {
             "tau": args.tau,
             "duel_q_net": args.duel_q_net,
             "policy_type": args.policy_type,
-            "action_bound_fn": args.action_bound_fn
+            "action_bound_fn": args.action_bound_fn,
+            "parameter_noise": args.parameter_noise
         }
     elif args.method == "ddpg":
         method_args = {
             "tau": args.tau,
             "ounoise": args.ounoise,
-            "decay": args.decay
+            "decay": args.decay,
+            "parameter_noise": args.parameter_noise
         }
 
     for e in range(args.n_experiments):
