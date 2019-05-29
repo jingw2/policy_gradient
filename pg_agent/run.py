@@ -193,6 +193,7 @@ def main():
     parser.add_argument('--method', '-m', type=str, default="vpg")
     parser.add_argument("--save_model", "-sm", action='store_true')
     parser.add_argument("--load_model", "-lm", action='store_true')
+    parser.add_argument("--multiprocess", "-mp", action='store_true')
     parser.add_argument("--parameter_noise", "-pn", action='store_true')
 
     # vpg arguments
@@ -267,10 +268,12 @@ def main():
                 )
         # # Awkward hacky process runs, because Tensorflow does not like
         # # repeatedly calling train_PG in the same thread.
-        p = Process(target=train_func, args=tuple())
-        p.start()
-        processes.append(p)
-        # train_func()
+        if args.multiprocess:
+            p = Process(target=train_func, args=tuple())
+            p.start()
+            processes.append(p)
+        else:
+            train_func()
         # if you comment in the line below, then the loop will block 
         # until this process finishes
         # p.join()
