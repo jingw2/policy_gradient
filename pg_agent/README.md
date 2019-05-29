@@ -39,6 +39,7 @@ and method arguments.
 | --seed | random seed | 1 |
 | --gpu | control gpu use | 1 |
 | --method (-m) | method to run | vpg |
+| --multiprocess (-mp) | multiprocess to run | apply -mp to use |
 
 #### VPG Arguments
 | name          | explanation   | default  |
